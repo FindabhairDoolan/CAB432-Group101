@@ -1,0 +1,32 @@
+services:
+  db:
+    image: mariadb:11
+    restart: always
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MARIADB_DATABASE: ${DB_NAME}
+      MARIADB_USER: ${DB_USER}
+      MARIADB_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - dbdata:/var/lib/mysql
+    ports:
+      - "${DB_PORT}:3306"
+
+  app:
+    build: .
+    depends_on:
+      - db
+    environment:
+      DB_HOST: ${DB_HOST}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      APP_SECRET: ${APP_SECRET}
+      PROCESS_DURATION: ${PROCESS_DURATION:-300}
+    volumes:
+      - ./data:/usr/src/app/data
+    ports:
+      - "3000:3000"
+
+volumes:
+  dbdata:
