@@ -13,7 +13,7 @@ services:
       - "${DB_PORT}:3306"
 
   app:
-    build: .
+    image: 901444280953.dkr.ecr.ap-southeast-2.amazonaws.com/n11957557-assessment1-repo:latest
     depends_on:
       - db
     environment:
@@ -22,7 +22,6 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       DB_NAME: ${DB_NAME}
       APP_SECRET: ${APP_SECRET}
-      PROCESS_DURATION: ${PROCESS_DURATION:-300}
     volumes:
       - ./data:/usr/src/app/data
     ports:
