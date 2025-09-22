@@ -1,0 +1,21 @@
+cd /usr
+aws configure sso --use-device-code
+
+#Responses to the aws configure (similar to Practical: Publishing an image to AWS ECR):
+ap-southeast-2
+#Skip
+default
+
+aws ecr get-login-password --region ap-southeast-2 | docker login --username AWS --password-stdin 901444280953.dkr.ecr.ap-southeast-2.amazonaws.com
+
+mkdir videorestapi
+cd videorestapi
+nano .env
+#Copy .env contents in from Extra branch in GitHub
+nano docker-compose.yml
+#Copy docker compose in from Extra branch
+
+
+docker compose pull
+docker compose up -d
+docker compose ps
