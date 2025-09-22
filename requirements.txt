@@ -1,8 +1,0 @@
-fastapi==0.116.1
-uvicorn[standard]==0.22.0
-python-multipart
-PyJWT
-python-dotenv
-mariadb
-requests
-
