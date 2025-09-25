@@ -1,9 +1,45 @@
+#Building and pushing image to repo
+#------------------------------------
 cd /usr
+sudo su -l ubuntu
 aws configure sso --use-device-code
 
 #Responses to the aws configure (similar to Practical: Publishing an image to AWS ECR):
+default
 ap-southeast-2
-#Skip
+#skip
+default
+
+aws ecr get-login-password --region ap-southeast-2 | docker login --username AWS --password-stdin 901444280953.dkr.ecr.ap-southeast-2.amazonaws.com
+
+#clone main branch of git repo
+git clone https://github.com/FindabhairDoolan/CAB432-Group101.git
+#Or if specific branch do: 
+git clone --branch <branch name> https://github.com/FindabhairDoolan/CAB432-Group101.git
+
+cd CAB432-Group101
+nano .env
+#Paste .env in here from extras
+
+#this will build just the main app that needs to be pushed in ecr, app will not work until later pulled from ecr
+docker build -t cab432-group101
+
+docker images
+#with docker images find app image id and replace below
+docker tag <image id> 901444280953.dkr.ecr.ap-southeast-2.amazonaws.com/group101-assessment2-repo
+docker push 901444280953.dkr.ecr.ap-southeast-2.amazonaws.com/group101-assessment2-repo
+
+
+#Pulling image from ecr
+#-----------------------------------
+cd /usr
+sudo su -l ubuntu
+aws configure sso --use-device-code
+
+#Responses to the aws configure (similar to Practical: Publishing an image to AWS ECR):
+default
+ap-southeast-2
+#skip
 default
 
 aws ecr get-login-password --region ap-southeast-2 | docker login --username AWS --password-stdin 901444280953.dkr.ecr.ap-southeast-2.amazonaws.com
@@ -17,5 +53,4 @@ nano docker-compose.yml
 
 
 docker compose pull
-docker compose up -d
-docker compose ps
+docker compose up
