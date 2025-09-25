@@ -3,6 +3,5 @@ uvicorn[standard]==0.22.0
 python-multipart
 PyJWT
 python-dotenv
-mariadb
+boto3
 requests
-
