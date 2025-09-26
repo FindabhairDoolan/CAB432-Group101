@@ -1,6 +1,5 @@
 from fastapi import FastAPI
-from auth import router as auth_router
-from transcoder.routes import router as trans_router
+from transcoder.routes import router
 
 #Create FastAPI instance
 app = FastAPI(title="Video Transcoder API", version="0.0.1")

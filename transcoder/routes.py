@@ -9,8 +9,10 @@ from transcoder.controllers import (
     get_video,
     download_transcoded
 )
+from auth import signup_user, confirm_user, login_user
 
 router = APIRouter()
+
 
 #Upload endpoints
 router.post("/upload")(upload_video)            
@@ -25,3 +27,8 @@ router.post("/tasks/start/{file_id}")(start_transcode)
 router.get("/tasks")(list_tasks)
 router.get("/tasks/{task_id}")(get_task)         
 router.get("/tasks/download/{task_id}")(download_transcoded)
+
+#auth endpoints
+router.post("/auth/signup")(signup_user)
+router.post("/auth/confirm")(confirm_user)
+router.post("/auth/login")(login_user)
