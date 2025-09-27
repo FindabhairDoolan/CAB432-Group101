@@ -52,7 +52,7 @@ async def presign_upload(filename: str, user=Depends(authenticate_token)):
 
     url = s3.generate_presigned_url(
         ClientMethod="put_object",
-        Params={"Bucket": S3_BUCKET, "Key": s3_key, "ContentType": "application/octet-stream"},
+        Params={"Bucket": S3_BUCKET, "Key": s3_key},
         ExpiresIn=300
     )
     #metadata
@@ -186,3 +186,4 @@ async def download_transcoded(task_id: str, user=Depends(authenticate_token)):
         ExpiresIn=300
     )
     return JSONResponse({"downloadUrl": url})
+
