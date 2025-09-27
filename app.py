@@ -12,9 +12,9 @@ def _resume_tasks_on_boot():
 
 
 #Include API routers
-app.include_router(auth_router, prefix="")
-app.include_router(trans_router, prefix="/videos")
+app.include_router(router)
 
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=3000)
+
