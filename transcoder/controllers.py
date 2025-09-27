@@ -1,73 +1,115 @@
-import os
-import threading
-import subprocess
+import os, threading, subprocess, tempfile
 from datetime import datetime
 from fastapi import UploadFile, File, HTTPException, Depends, Query
-from fastapi.responses import FileResponse
-from transcoder import models
+from fastapi.responses import JSONResponse
 from auth import authenticate_token
 from dotenv import load_dotenv
 
-load_dotenv()
-DATA_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data"))
-UPLOADS = os.path.join(DATA_DIR, "uploads")
-OUTPUTS = os.path.join(DATA_DIR, "outputs")
-os.makedirs(UPLOADS, exist_ok=True)
-os.makedirs(OUTPUTS, exist_ok=True)
+from aws import s3, S3_BUCKET, now_iso, new_file_id
+from transcoder import models
 
-#upload video
+load_dotenv()
+
+#uploade to s3
 async def upload_video(file: UploadFile = File(...), user=Depends(authenticate_token)):
     username = user['username']
     filename = os.path.basename(file.filename)
-    timestamp = int(datetime.utcnow().timestamp())
-    storage_name = f"{timestamp}__{filename}"
-    dest_path = os.path.join(UPLOADS, storage_name)
-    
-    with open(dest_path, "wb") as out:
+    created_at = now_iso()
+    file_id = new_file_id()
+
+    #S3 key with by user and fileId
+    s3_key = f"uploads/{username}/{file_id}/{filename}"
+
+    #stream file to temp file then uploads
+    with tempfile.NamedTemporaryFile(delete=False) as tmp:
         while True:
-            chunk = await file.read(1024*1024)
+            chunk = await file.read(1024 * 1024)
             if not chunk:
                 break
-            out.write(chunk)
-    
-    size = os.path.getsize(dest_path)
-    meta = models.create_video_metadata(filename, dest_path, size, username)
+            tmp.write(chunk)
+        tmp_path = tmp.name
+
+    size = os.path.getsize(tmp_path)
+    try:
+        s3.upload_file(tmp_path, S3_BUCKET, s3_key, ExtraArgs={"ContentType": file.content_type or "application/octet-stream"})
+    finally:
+        try:
+            os.remove(tmp_path)
+        except FileNotFoundError:
+            pass
+
+    meta = models.create_video_metadata(file_id, filename, s3_key, size, username, created_at)
     return {"file": meta}
 
-#run the transcode
-def run_transcode(task_id, input_path, output_path, preset):
-    started = datetime.utcnow()
-    models.update_task_status(task_id, "running", started_at=started)
-    
+#presigned url for browser upload
+async def presign_upload(filename: str, user=Depends(authenticate_token)):
+    import urllib.parse
+    username = user['username']
+    file_id = new_file_id()
+    created_at = now_iso()
+    safe_name = os.path.basename(filename)
+    s3_key = f"uploads/{username}/{file_id}/{safe_name}"
+
+    url = s3.generate_presigned_url(
+        ClientMethod="put_object",
+        Params={"Bucket": S3_BUCKET, "Key": s3_key, "ContentType": "application/octet-stream"},
+        ExpiresIn=300
+    )
+    #metadata
+    models.create_video_metadata(file_id, safe_name, s3_key, 0, username, created_at)
+    return {"uploadUrl": url, "fileId": file_id, "s3Key": s3_key}
+
+#transcodes(download from s3 then uploads new thing to s3)
+def run_transcode(task_owner, task_id, input_key, output_key, preset):
+    started = now_iso()
+    models.update_task_status(task_owner, task_id, "running", started_at=started)
+
     allowed_presets = {"1080p": 1080, "720p": 720, "480p": 480, "360p": 360}
     height = allowed_presets.get(preset, 1080)
 
-    cmd = [
-        "ffmpeg", "-y",
-        "-i", input_path,
-        "-c:v", "libx264",
-        "-preset", "veryslow",
-        "-crf", "28",
-        "-vf", f"scale=-2:{height}",
-        "-threads", "0",
-        output_path
-    ]
-    
-    try:
-        subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        finished = datetime.utcnow()
-        models.update_task_status(task_id, "finished", output_path=output_path, finished_at=finished)
-    except subprocess.CalledProcessError as e:
-        models.update_task_status(task_id, "failed", error=str(e))
+    in_tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4").name
+    out_tmp = tempfile.NamedTemporaryFile(delete=False, suffix=f"_{preset}.mp4").name
 
-#Start transcode
+    try:
+        #Download from S3
+        s3.download_file(S3_BUCKET, input_key, in_tmp)
+
+        #Transcode
+        cmd = [
+            "ffmpeg", "-y",
+            "-i", in_tmp,
+            "-c:v", "libx264",
+            "-preset", "veryslow",
+            "-crf", "28",
+            "-vf", f"scale=-2:{height}",
+            "-threads", "0",
+            out_tmp
+        ]
+        subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+        #Upload output to S3
+        s3.upload_file(out_tmp, S3_BUCKET, output_key, ExtraArgs={"ContentType": "video/mp4"})
+
+        finished = now_iso()
+        models.update_task_status(task_owner, task_id, "finished", output_key=output_key, finished_at=finished)
+    except subprocess.CalledProcessError as e:
+        models.update_task_status(task_owner, task_id, "failed", error=str(e))
+    finally:
+        for p in (in_tmp, out_tmp):
+            try: os.remove(p)
+            except FileNotFoundError: pass
+
+#start transcode
 async def start_transcode(
-    file_id: int,
+    file_id: str,
     preset: str = Query("1080p", description="Resolution presets: '1080p', '720p', '480p', '360p'"),
     user=Depends(authenticate_token)
 ):
-    
-    file_meta = models.get_video_by_id(file_id)
+    username = user['username']
+    file_meta = models.get_video_by_id(file_id, uploaded_by=username) if not user.get("admin") else None
+
+    if user.get("admin"):
+        file_meta = file_meta or models.get_video_by_id(file_id, uploaded_by=username)
     if not file_meta:
         raise HTTPException(status_code=404, detail="File not found")
 
@@ -75,102 +117,72 @@ async def start_transcode(
     if preset not in allowed_presets:
         raise HTTPException(status_code=400, detail=f"Invalid preset: {preset}")
 
-
-    if not user.get("admin") and file_meta["uploaded_by"] != user["username"]:
-        raise HTTPException(status_code=403, detail="Forbidden: cannot transcode files of other users")
-
-    task = models.create_task_record(file_id, preset)
+    task = models.create_task_record(uploaded_by=username, file_id=file_id, preset=preset, created_at=now_iso())
     task_id = task["id"]
 
-    base = os.path.basename(file_meta["storage_path"])
-    out_name = f"task{task_id}__{preset}__{base}.mp4"
-    out_path = os.path.join(OUTPUTS, out_name)
+    #s3 key is same as input but is under outputs
+    base_name = os.path.splitext(os.path.basename(file_meta["s3Key"]))[0]
+    output_key = f"outputs/{username}/{file_id}/{base_name}_{preset}.mp4"
 
     t = threading.Thread(
         target=run_transcode,
-        args=(task_id, file_meta["storage_path"], out_path, preset),
+        args=(username, task_id, file_meta["s3Key"], output_key, preset),
         daemon=True
     )
     t.start()
-    
+
     return {"task_id": task_id, "status": "started"}
 
-#get videos
+#listening and fetching(per user)
 async def list_videos(
-    limit: int = Query(10, ge=1, le=100), 
+    limit: int = Query(10, ge=1, le=100),
     offset: int = Query(0, ge=0),
-    sort_by: str = Query("created_at", description="Sort by 'created_at','id', 'filename' or 'size'" ),
-    order: str = Query("desc", description="Order by 'asc' (ascending) or 'desc' descending"),
+    sort_by: str = Query("created_at"),
+    order: str = Query("desc"),
     user=Depends(authenticate_token)
 ):
-
-    if user.get("admin"):
-        # Admin sees all files
-        return models.get_all_videos(limit=limit, offset=offset, sort_by=sort_by, order=order)
-    else:
-        # Regular user sees only their files
-        return models.get_all_videos(limit=limit, offset=offset, sort_by=sort_by, order=order, uploaded_by=user["username"])
+    #per user listing
+    return models.get_all_videos(limit=limit, offset=offset, sort_by=sort_by, order=order, uploaded_by=user["username"])
 
 #get video
-async def get_video(file_id: int, user=Depends(authenticate_token)):
-    file_meta = models.get_video_by_id(file_id)
-
+async def get_video(file_id: str, user=Depends(authenticate_token)):
+    v = models.get_video_by_id(file_id, uploaded_by=user["username"])
+    if not v:
+        raise HTTPException(status_code=404, detail="File not found")
     #Ownership check
     if not user.get("admin") and file_meta["uploaded_by"] != user["username"]:
         raise HTTPException(status_code=403, detail="Forbidden: cannot access this video")
-    
-    if not file_meta:
-        raise HTTPException(status_code=404, detail="File not found")
-    return file_meta
+    return v
 
-#get tasks
 async def list_tasks(
-    status: str = Query(None, description="Filter tasks by 'queued', 'started', 'running', 'finished', 'failed'"),
+    status: str | None = Query(None),
     limit: int = Query(10, ge=1, le=100),
     offset: int = Query(0, ge=0),
-    sort_by: str = Query("id", description="Sort by 'id', 'file_id', 'preset', 'status', 'started_at', 'finished_at'"),
-    order: str = Query("desc", description="Order by 'asc' (ascending) or 'desc' descending"),
+    sort_by: str = Query("id"),
+    order: str = Query("desc"),
     user=Depends(authenticate_token)
 ):
+    return models.get_tasks(uploaded_by=user["username"], status=status, limit=limit, offset=offset, sort_by=sort_by, order=order)
 
-    if user.get("admin"):
-        return models.get_tasks(status=status, limit=limit, offset=offset, sort_by=sort_by, order=order)
-    else:
-        return models.get_tasks(status=status, limit=limit, offset=offset, sort_by=sort_by, order=order, username=user["username"])
+async def get_task(task_id: str, user=Depends(authenticate_token)):
+    t = models.get_task_by_id(uploaded_by=user["username"], task_id=task_id)
+    if not t:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return t
 
-#get task
-async def get_task(task_id: int, user=Depends(authenticate_token)):
-    task = models.get_task_by_id(task_id)
-    if not task:
+#download via presigned get
+async def download_transcoded(task_id: str, user=Depends(authenticate_token)):
+    t = models.get_task_by_id(uploaded_by=user["username"], task_id=task_id)
+    if not t:
         raise HTTPException(status_code=404, detail="Task not found")
 
-    file_meta = models.get_video_by_id(task["file_id"])
-    if not user.get("admin") and file_meta["uploaded_by"] != user["username"]:
-        raise HTTPException(status_code=403, detail="Not allowed to view this task")
-
-
-    return task
-
-#download
-async def download_transcoded(task_id: int, user=Depends(authenticate_token)):
-    task = models.get_task_by_id(task_id)
-    if not task:
-        raise HTTPException(status_code=404, detail="Task not found")
-
-    file_meta = models.get_video_by_id(task["file_id"])
-    if not user.get("admin") and file_meta["uploaded_by"] != user["username"]:
-        raise HTTPException(status_code=403, detail="Not allowed to download this task")
-
-
-    if task["status"] != "finished" or not task.get("output_path"):
+    if t["status"] != "finished" or not t.get("output_key"):
         raise HTTPException(status_code=400, detail="Transcoding not finished yet")
 
-    output_path = task["output_path"]
-    if not os.path.exists(output_path):
-        raise HTTPException(status_code=404, detail="Output file not found")
-
-    return FileResponse(
-        path=output_path,
-        filename=os.path.basename(output_path),
-        media_type="application/octet-stream"
+    #presigned get
+    url = s3.generate_presigned_url(
+        ClientMethod="get_object",
+        Params={"Bucket": S3_BUCKET, "Key": t["output_key"]},
+        ExpiresIn=300
     )
+    return JSONResponse({"downloadUrl": url})
