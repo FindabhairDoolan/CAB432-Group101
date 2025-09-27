@@ -11,9 +11,9 @@ load_dotenv()
 security = HTTPBearer()
 
 REGION = os.environ["AWS_REGION"]
-USER_POOL_ID = os.environ["COGNITO_USER_POOL_ID"]
-CLIENT_ID = os.environ["COGNITO_CLIENT_ID"]
-CLIENT_SECRET = os.environ["COGNITO_CLIENT_SECRET"]
+USER_POOL_ID = os.environ["USER_POOL_ID"]
+CLIENT_ID = os.environ["CLIENT_ID"]
+CLIENT_SECRET = os.environ["CLIENT_SECRET"]
 
 #Cognito
 JWKS_URL = f"https://cognito-idp.{REGION}.amazonaws.com/{USER_POOL_ID}/.well-known/jwks.json"
