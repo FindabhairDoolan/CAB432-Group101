@@ -1,16 +1,34 @@
 services:
+  db:
+    image: mariadb:11
+    restart: always
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MARIADB_DATABASE: ${DB_NAME}
+      MARIADB_USER: ${DB_USER}
+      MARIADB_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - dbdata:/var/lib/mysql
+    ports:
+      - "${DB_PORT}:3306"
 
   app:
     image: 901444280953.dkr.ecr.ap-southeast-2.amazonaws.com/group101-assessment2-repo:latest
     depends_on:
       - db
     environment:
-      APP_SECRET: ${APP_SECRET}
-      AWS_REGION: ap-southeast-2
-      S3_BUCKET: video-bucket
-      DDB_TABLE_FILES: n12015148-videos
-      DDB_TABLE_TASKS: n12015148-tasks
-      QUT_USERNAME: n12015148@qut.edu.au
+      DB_HOST: ${DB_HOST}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      REGION: ${REGION}
+      USER_POOL_ID: ${COGNITO_USER_POOL_ID}
+      CLIENT_ID: ${COGNITO_CLIENT_ID}
+      CLIENT_SECRET: ${COGNITO_CLIENT_SECRET}
+    volumes:
+      - ./data:/usr/src/app/data
     ports:
       - "3000:3000"
-"
+
+volumes:
+  dbdata:
