@@ -10,7 +10,7 @@ from jose.exceptions import JWTError, ExpiredSignatureError, JWTClaimsError
 load_dotenv()
 security = HTTPBearer()
 
-REGION = os.environ["REGION"]
+REGION = os.environ["AWS_REGION"]
 USER_POOL_ID = os.environ["COGNITO_USER_POOL_ID"]
 CLIENT_ID = os.environ["COGNITO_CLIENT_ID"]
 CLIENT_SECRET = os.environ["COGNITO_CLIENT_SECRET"]
