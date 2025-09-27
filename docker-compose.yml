@@ -2,8 +2,6 @@ services:
 
   app:
     image: 901444280953.dkr.ecr.ap-southeast-2.amazonaws.com/group101-assessment2-repo:latest
-    depends_on:
-      - db
     environment:
       USER_POOL_ID: ${COGNITO_USER_POOL_ID}
       CLIENT_ID: ${COGNITO_CLIENT_ID}
@@ -15,4 +13,3 @@ services:
       QUT_USERNAME: ${QUT_USERNAME}
     ports:
       - "3000:3000"
-"
