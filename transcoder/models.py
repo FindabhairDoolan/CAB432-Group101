@@ -188,13 +188,13 @@ def get_video_by_id_any(file_id: str):
 
 #get tasks by status - helper for startup check
 def get_tasks_by_statuses(statuses: set[str], limit: int = 200):
-    resp = dynamo.query(
+    resp = dynamo.scan(
         TableName=TABLE_TASKS,
-        KeyConditionExpression="#pk = :pk AND begins_with(#sk, :pref)",
-        ExpressionAttributeNames={"#pk": "qut-username", "#sk": "taskId"},
-        ExpressionAttributeValues={":pk": {"S": QUT_USERNAME}, ":pref": {"S": "TASK#"}},
-        ScanIndexForward=False,
-        Limit=limit
+        FilterExpression="task_status IN (:s1, :s2)",
+        ExpressionAttributeValues={
+        ":s1": {"S": "queued"},
+        ":s2": {"S": "running"}
+        }
     )
     items = resp.get("Items", [])
     out = []
@@ -214,4 +214,5 @@ def get_tasks_by_statuses(statuses: set[str], limit: int = 200):
                 "output_key": it.get("outputKey", {}).get("S")
             })
     return out
+
 
