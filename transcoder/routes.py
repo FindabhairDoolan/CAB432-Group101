@@ -32,3 +32,6 @@ router.get("/tasks/download/{task_id}")(download_transcoded)
 router.post("/auth/signup")(signup_user)
 router.post("/auth/confirm")(confirm_user)
 router.post("/auth/login")(login_user)
+router.post("/auth/confirm")(confirm_user)
+router.post("/auth/login")(login_user)
+
