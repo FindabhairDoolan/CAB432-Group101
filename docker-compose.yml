@@ -5,7 +5,9 @@ services:
     depends_on:
       - db
     environment:
-      APP_SECRET: ${APP_SECRET}
+      USER_POOL_ID: ${COGNITO_USER_POOL_ID}
+      CLIENT_ID: ${COGNITO_CLIENT_ID}
+      CLIENT_SECRET: ${COGNITO_CLIENT_SECRET}
       AWS_REGION: ap-southeast-2
       S3_BUCKET: video-bucket
       DDB_TABLE_FILES: n12015148-videos
