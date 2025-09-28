@@ -139,17 +139,18 @@ async def list_videos(
     order: str = Query("desc"),
     user=Depends(authenticate_token)
 ):
-    #per user listing
+    if user.get("admin"):
+        return models.get_all_videos(limit=limit, offset=offset, sort_by=sort_by, order=order)
     return models.get_all_videos(limit=limit, offset=offset, sort_by=sort_by, order=order, uploaded_by=user["username"])
 
 #get video
 async def get_video(file_id: str, user=Depends(authenticate_token)):
-    v = models.get_video_by_id(file_id, uploaded_by=user["username"])
+    if user.get("admin"):
+        v = models.get_video_by_id_any(file_id)  # admin sees any file
+    else:
+        v = models.get_video_by_id(file_id, uploaded_by=user["username"])
     if not v:
         raise HTTPException(status_code=404, detail="File not found")
-    #Ownership check
-    if not user.get("admin") and v["uploaded_by"] != user["username"]:
-        raise HTTPException(status_code=403, detail="Forbidden: cannot access this video")
     return v
 
 async def list_tasks(
@@ -160,6 +161,8 @@ async def list_tasks(
     order: str = Query("desc"),
     user=Depends(authenticate_token)
 ):
+    if user.get("admin"):
+        return models.get_tasks(uploaded_by=None, status=status, limit=limit, offset=offset, sort_by=sort_by, order=order)
     return models.get_tasks(uploaded_by=user["username"], status=status, limit=limit, offset=offset, sort_by=sort_by, order=order)
 
 async def get_task(task_id: str, user=Depends(authenticate_token)):

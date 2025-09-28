@@ -147,8 +147,9 @@ def get_tasks(uploaded_by: str, status=None, limit=10, offset=0, sort_by="id", o
     )
     items = resp.get("Items", [])
 
-    #filter to the app user
-    items = [it for it in items if it.get("uploaded_by", {}).get("S") == uploaded_by]
+    #filter by user only if provided
+    if uploaded_by:
+        items = [it for it in items if it.get("uploaded_by", {}).get("S") == uploaded_by]
     #filter by status
     if status:
         items = [it for it in items if it.get("status", {}).get("S") == status]
