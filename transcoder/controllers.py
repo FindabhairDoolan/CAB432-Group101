@@ -149,8 +149,8 @@ async def get_video(file_id: str, user=Depends(authenticate_token)):
     v = models.get_video_by_id(file_id, uploaded_by=user["username"])
     if not v:
         raise HTTPException(status_code=404, detail="File not found")
-    # Ownership check
-    if not user.get("admin") and v["uploaded_by"] != user["username"]:
+    #Ownership check
+    if not user.get("admin") and file_meta["uploaded_by"] != user["username"]:
         raise HTTPException(status_code=403, detail="Forbidden: cannot access this video")
     return v
 
