@@ -1,11 +1,5 @@
-import os, datetime, uuid
-import boto3
-
-AWS_REGION = os.environ.get("AWS_REGION", "ap-southeast-2")
-S3_BUCKET = os.environ["S3_BUCKET"]
-TABLE_FILES = os.environ["DDB_TABLE_FILES"]
-TABLE_TASKS = os.environ["DDB_TABLE_TASKS"]
-QUT_USERNAME = os.environ["QUT_USERNAME"]  # e.g., n1234567@qut.edu.au
+import datetime, uuid, boto3
+from config import AWS_REGION
 
 s3 = boto3.client("s3", region_name=AWS_REGION)
 dynamo = boto3.client("dynamodb", region_name=AWS_REGION)

@@ -1,9 +1,10 @@
-from aws import dynamo, TABLE_FILES, TABLE_TASKS, QUT_USERNAME
+from aws import dynamo
+from configure import DDB_TABLE_FILES, DDB_TABLE_TASKS, QUT_USERNAME
 
 #videos
 def create_video_metadata(file_id: str, filename: str, s3_key: str, size: int, uploaded_by: str, created_at: str):
     dynamo.put_item(
-        TableName=TABLE_FILES,
+        TableName=DDB_TABLE_FILES,
         Item={
             "qut-username": {"S": QUT_USERNAME},   #fixed pk cause unit rule
             "fileId": {"S": file_id},              
@@ -25,7 +26,7 @@ def create_video_metadata(file_id: str, filename: str, s3_key: str, size: int, u
 #lists all videos under the QUT PK
 def get_all_videos(limit=10, offset=0, sort_by="created_at", order="desc", uploaded_by=None):
     resp = dynamo.query(
-        TableName=TABLE_FILES,
+        TableName=DDB_TABLE_FILES,
         KeyConditionExpression="#pk = :pk AND begins_with(#sk, :pref)",
         ExpressionAttributeNames={"#pk": "qut-username", "#sk": "fileId"},
         ExpressionAttributeValues={":pk": {"S": QUT_USERNAME}, ":pref": {"S": "FILE#"}},
@@ -52,7 +53,7 @@ def get_all_videos(limit=10, offset=0, sort_by="created_at", order="desc", uploa
 #gets video by ID
 def get_video_by_id(file_id: str, uploaded_by: str):
     resp = dynamo.get_item(
-        TableName=TABLE_FILES,
+        TableName=DDB_TABLE_FILES,
         Key={"qut-username": {"S": QUT_USERNAME}, "fileId": {"S": file_id}}
     )
     it = resp.get("Item")
@@ -75,7 +76,7 @@ def create_task_record(uploaded_by: str, file_id: str, preset: str, created_at: 
     from aws import new_task_id
     task_id = new_task_id()
     dynamo.put_item(
-        TableName=TABLE_TASKS,
+        TableName=DDB_TABLE_TASKS,
         Item={
             "qut-username": {"S": QUT_USERNAME},  
             "taskId": {"S": task_id},            
@@ -104,7 +105,7 @@ def update_task_status(uploaded_by: str, task_id: str, status: str, output_key=N
         expr_parts.append("finishedAt = :fa"); vals[":fa"] = {"S": finished_at}
 
     dynamo.update_item(
-        TableName=TABLE_TASKS,
+        TableName=DDB_TABLE_TASKS,
         Key={"qut-username": {"S": QUT_USERNAME}, "taskId": {"S": task_id}},
         UpdateExpression="SET " + ", ".join(expr_parts),
         ExpressionAttributeNames=names,
@@ -114,7 +115,7 @@ def update_task_status(uploaded_by: str, task_id: str, status: str, output_key=N
 #get task by id
 def get_task_by_id(uploaded_by: str, task_id: str):
     resp = dynamo.get_item(
-        TableName=TABLE_TASKS,
+        TableName=DDB_TABLE_TASKS,
         Key={"qut-username": {"S": QUT_USERNAME}, "taskId": {"S": task_id}}
     )
     it = resp.get("Item")
@@ -137,7 +138,7 @@ def get_task_by_id(uploaded_by: str, task_id: str):
 
 def get_tasks(uploaded_by: str, status=None, limit=10, offset=0, sort_by="id", order="desc"):
     resp = dynamo.query(
-        TableName=TABLE_TASKS,
+        TableName=DDB_TABLE_TASKS,
         KeyConditionExpression="#pk = :pk AND begins_with(#sk, :pref)",
         ExpressionAttributeNames={"#pk": "qut-username", "#sk": "taskId"},
         ExpressionAttributeValues={":pk": {"S": QUT_USERNAME}, ":pref": {"S": "TASK#"}},
@@ -171,7 +172,7 @@ def get_tasks(uploaded_by: str, status=None, limit=10, offset=0, sort_by="id", o
 #finds file - helper for startup check
 def get_video_by_id_any(file_id: str):
     resp = dynamo.get_item(
-        TableName=TABLE_FILES,
+        TableName=DDB_TABLE_FILES,
         Key={"qut-username": {"S": QUT_USERNAME}, "fileId": {"S": file_id}}
     )
     it = resp.get("Item")
@@ -189,12 +190,14 @@ def get_video_by_id_any(file_id: str):
 #get tasks by status - helper for startup check
 def get_tasks_by_statuses(statuses: set[str], limit: int = 200):
     resp = dynamo.scan(
-        TableName=TABLE_TASKS,
-        FilterExpression="task_status IN (:s1, :s2)",
+        TableName=DDB_TABLE_TASKS,
+        FilterExpression="#s IN (:s1, :s2)",
+        ExpressionAttributeNames={"#s": "status"},
         ExpressionAttributeValues={
         ":s1": {"S": "queued"},
         ":s2": {"S": "running"}
-        }
+        },
+        Limit=limit
     )
     items = resp.get("Items", [])
     out = []

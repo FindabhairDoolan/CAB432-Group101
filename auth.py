@@ -1,24 +1,18 @@
-import os, hmac, hashlib, base64, requests
+import hmac, hashlib, base64, requests
 import boto3
 from fastapi import HTTPException, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
-from dotenv import load_dotenv
 from jose import jwt
 from jose.exceptions import JWTError, ExpiredSignatureError, JWTClaimsError
+from config import AWS_REGION, USER_POOL_ID, CLIENT_ID, CLIENT_SECRET
 
-load_dotenv()
 security = HTTPBearer()
 
-REGION = os.environ["AWS_REGION"]
-USER_POOL_ID = os.environ["USER_POOL_ID"]
-CLIENT_ID = os.environ["CLIENT_ID"]
-CLIENT_SECRET = os.environ["CLIENT_SECRET"]
-
 #Cognito
-JWKS_URL = f"https://cognito-idp.{REGION}.amazonaws.com/{USER_POOL_ID}/.well-known/jwks.json"
+JWKS_URL = f"https://cognito-idp.{AWS_REGION}.amazonaws.com/{USER_POOL_ID}/.well-known/jwks.json"
 jwks = requests.get(JWKS_URL).json()
-client = boto3.client("cognito-idp", region_name=REGION)
+client = boto3.client("cognito-idp", region_name=AWS_REGION)
 
 #Models
 class SignUpRequest(BaseModel):
@@ -105,7 +99,7 @@ def authenticate_token(credentials: HTTPAuthorizationCredentials = Depends(secur
             key,  #jose handles jwk dicts directly
             algorithms=["RS256"],
             audience=CLIENT_ID,
-            issuer=f"https://cognito-idp.{REGION}.amazonaws.com/{USER_POOL_ID}"
+            issuer=f"https://cognito-idp.{AWS_REGION}.amazonaws.com/{USER_POOL_ID}"
         )
 
         #Check its an ID token 

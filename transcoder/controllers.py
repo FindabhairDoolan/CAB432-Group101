@@ -3,12 +3,10 @@ from datetime import datetime
 from fastapi import UploadFile, File, HTTPException, Depends, Query
 from fastapi.responses import JSONResponse
 from auth import authenticate_token
-from dotenv import load_dotenv
 
-from aws import s3, S3_BUCKET, now_iso, new_file_id
+from aws import s3, now_iso, new_file_id
+from configure import S3_BUCKET
 from transcoder import models
-
-load_dotenv()
 
 #uploade to s3
 async def upload_video(file: UploadFile = File(...), user=Depends(authenticate_token)):
@@ -150,7 +148,7 @@ async def get_video(file_id: str, user=Depends(authenticate_token)):
     if not v:
         raise HTTPException(status_code=404, detail="File not found")
     #Ownership check
-    if not user.get("admin") and file_meta["uploaded_by"] != user["username"]:
+    if not user.get("admin") and v["uploaded_by"] != user["username"]:
         raise HTTPException(status_code=403, detail="Forbidden: cannot access this video")
     return v
 

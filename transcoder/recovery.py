@@ -1,8 +1,7 @@
 import os, threading
 from aws import now_iso
 from transcoder import models
-from transcoder.controllers import run_transcode 
-from aws import S3_BUCKET 
+from transcoder.controllers import run_transcode  
 
 def _compute_output_key(username: str, file_s3_key: str, file_id: str, preset: str) -> str:
     base_name = os.path.splitext(os.path.basename(file_s3_key))[0]
