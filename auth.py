@@ -5,7 +5,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 from jose import jwt
 from jose.exceptions import JWTError, ExpiredSignatureError, JWTClaimsError
-from config import AWS_REGION, USER_POOL_ID, CLIENT_ID, CLIENT_SECRET
+from configure import AWS_REGION, USER_POOL_ID, CLIENT_ID, CLIENT_SECRET
 
 security = HTTPBearer()
 
