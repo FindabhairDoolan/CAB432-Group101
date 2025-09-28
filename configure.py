@@ -1,4 +1,5 @@
 import boto3
+import json
 from botocore.exceptions import ClientError
 
 region_name = "ap-southeast-2"
@@ -21,7 +22,7 @@ def get_parameter(parameter_name: str) -> str:
     except ClientError as e:
         raise RuntimeError(f"Failed to retrieve parameter {parameter_name}: {e}")
 
-# Now load config
+#Now load config
 AWS_REGION = region_name
 S3_BUCKET = get_parameter("/Group101/S3_BUCKET")
 DDB_TABLE_FILES = get_parameter("/Group101/DDB_TABLE_FILES")
@@ -31,5 +32,6 @@ QUT_USERNAME = "n11957557@qut.edu.au"
 USER_POOL_ID = get_parameter("/Group101/USER_POOL_ID")
 CLIENT_ID = get_parameter("/Group101/CLIENT_ID")
 
-# From Secrets Manager
-CLIENT_SECRET = get_secret("group101-cognitosecret")
+#From Secrets Manager
+secret_json = get_secret("group101-cognitosecret")
+CLIENT_SECRET = json.loads(secret_json)["CLIENT_SECRET"]
