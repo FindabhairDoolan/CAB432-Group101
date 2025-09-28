@@ -13,33 +13,33 @@ Instructions
 Overview
 ------------------------------------------------
 
-- **Name:** YourName GoesHere
-- **Student number:** n100200300
-- **Partner name (if applicable):** YourPartner NameHere
+- **Name:** Findabhair Doolan
+- **Student number:** n11957557
+- **Partner name (if applicable):** Alex O'Donnell
 - **Application name:** FooBarBaz
-- **Two line description:** I/We implemented this very cool app that does Foo, Bar and Baz.
+- **Two line description:** We implemented an app that transcodes videos, and allows uploading and downloading of said videos.
 - **EC2 instance name or ID:**
 
 ------------------------------------------------
 
 ### Core - First data persistence service
 
-- **AWS service name:**  [eg. S3]
-- **What data is being stored?:** [eg video files]
-- **Why is this service suited to this data?:** [eg. large files are best suited to blob storage due to size restrictions on other services]
-- **Why is are the other services used not suitable for this data?:**
-- **Bucket/instance/table name:**
+- **AWS service name:**  S3
+- **What data is being stored?:** Video Files
+- **Why is this service suited to this data?:** The video files are best suited for this server due to the size limits.
+- **Why is are the other services used not suitable for this data?:** Same reason as above, this allows data storage with size limits that allow what we need
+- **Bucket/instance/table name:** n11957557-video-bucket
 - **Video timestamp:**
 - **Relevant files:**
     -
 
 ### Core - Second data persistence service
 
-- **AWS service name:**  [eg. DynamoDB]
-- **What data is being stored?:** 
+- **AWS service name:**  DynamoDB
+- **What data is being stored?:** The metadata for the video files in the first table, and a list of tasks to complete in the tasks files. 
 - **Why is this service suited to this data?:**
 - **Why is are the other services used not suitable for this data?:**
-- **Bucket/instance/table name:**
+- **Bucket/instance/table name:** "n11957557-videos" and "n11957557-tasks"
 - **Video timestamp:**
 - **Relevant files:**
     -
@@ -73,10 +73,10 @@ Overview
 
 ### Core - Statelessness
 
-- **What data is stored within your application that is not stored in cloud data services?:** [eg. intermediate video files that have been transcoded but not stabilised]
-- **Why is this data not considered persistent state?:** [eg. intermediate files can be recreated from source if they are lost]
-- **How does your application ensure data consistency if the app suddenly stops?:** [eg. journal used to record data transactions before they are done.  A separate task scans the journal and corrects problems on startup and once every 5 minutes afterwards. ]
-- **Relevant files:**
+- **What data is stored within your application that is not stored in cloud data services?:** Video files that have been transcoded but not put in the S3 bucket yet.
+- **Why is this data not considered persistent state?:** They can be retranscoded from the original file if necessary. 
+- **How does your application ensure data consistency if the app suddenly stops?:** The tasks table acts as a journel to resume interuppted tasks upon restart of the program.
+- **Relevant files:** recovery.py
     -
 
 ### Graceful handling of persistent connections
