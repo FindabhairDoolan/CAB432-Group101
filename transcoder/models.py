@@ -49,18 +49,23 @@ def get_all_videos(limit=10, offset=0, sort_by="created_at", order="desc", uploa
             "created_at": it["createdAt"]["S"]
         })
     return out
-#gets video by ID
+#Gets video by id
 def get_video_by_id(file_id: str, uploaded_by: str):
-    resp = dynamo.get_item(
+    resp = dynamo.query(
         TableName=TABLE_FILES,
-        Key={"qut-username": {"S": QUT_USERNAME}, "fileId": {"S": file_id}}
+        KeyConditionExpression="qut-username = :qut AND uploaded_by = :user",
+        FilterExpression="fileId = :fid",
+        ExpressionAttributeValues={
+            ":qut": {"S": QUT_USERNAME},
+            ":user": {"S": uploaded_by},
+            ":fid": {"S": file_id}
+        }
     )
-    it = resp.get("Item")
-    if not it:
+    items = resp.get("Items", [])
+    if not items:
         return None
-    if it.get("uploaded_by", {}).get("S") != uploaded_by:
-        return None  #controller gives right error
 
+    it = items[0]
     return {
         "id": it["fileId"]["S"],
         "filename": it["filename"]["S"],
