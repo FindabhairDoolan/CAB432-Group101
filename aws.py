@@ -1,5 +1,5 @@
 import datetime, uuid, boto3
-from config import AWS_REGION
+from configure import AWS_REGION
 
 s3 = boto3.client("s3", region_name=AWS_REGION)
 dynamo = boto3.client("dynamodb", region_name=AWS_REGION)
