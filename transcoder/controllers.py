@@ -166,7 +166,10 @@ async def list_tasks(
     return models.get_tasks(uploaded_by=user["username"], status=status, limit=limit, offset=offset, sort_by=sort_by, order=order)
 
 async def get_task(task_id: str, user=Depends(authenticate_token)):
-    t = models.get_task_by_id(uploaded_by=user["username"], task_id=task_id)
+    if user.get("admin"):
+        t = models.get_task_by_id_any(task_id)
+    else:
+        t = models.get_task_by_id(uploaded_by=user["username"], task_id=task_id)
     if not t:
         raise HTTPException(status_code=404, detail="Task not found")
     return t

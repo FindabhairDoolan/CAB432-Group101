@@ -170,6 +170,26 @@ def get_tasks(uploaded_by: str, status=None, limit=10, offset=0, sort_by="id", o
         })
     return out
 
+def get_task_by_id_any(task_id: str):
+    resp = dynamo.get_item(
+        TableName=DDB_TABLE_TASKS,
+        Key={"qut-username": {"S": QUT_USERNAME}, "taskId": {"S": task_id}}
+    )
+    it = resp.get("Item")
+    if not it:
+        return None
+    return {
+        "id": it["taskId"]["S"],
+        "file_id": it["fileId"]["S"],
+        "preset": it["preset"]["S"],
+        "status": it["status"]["S"],
+        "created_at": it.get("createdAt", {}).get("S"),
+        "started_at": it.get("startedAt", {}).get("S"),
+        "finished_at": it.get("finishedAt", {}).get("S"),
+        "error": it.get("error", {}).get("S"),
+        "output_key": it.get("outputKey", {}).get("S")
+    }
+
 #finds file - helper for startup check
 def get_video_by_id_any(file_id: str):
     resp = dynamo.get_item(
