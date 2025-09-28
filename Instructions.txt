@@ -22,7 +22,7 @@ nano .env
 #Paste .env in here from extras
 
 #this will build just the main app that needs to be pushed in ecr, app will not work until later pulled from ecr
-docker build -t cab432-group101
+docker build -t cab432-group101 .
 
 docker images
 #with docker images find app image id and replace below
@@ -54,3 +54,9 @@ nano docker-compose.yml
 
 docker compose pull
 docker compose up
+
+#presigned url command
+#--------------------------------
+#Note that this is for git bash, and path url must be translated from this "C:\Users\fdool\Videos\video.mkv"
+#to this C:/Users/fdool/Videos/video.mkv
+curl -X PUT -T "C:/Users/fdool/Videos/video.mkv" "URL"
