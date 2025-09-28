@@ -30,18 +30,18 @@ Overview
 - **Why is are the other services used not suitable for this data?:** Same reason as above, this allows data storage with size limits that allow what we need
 - **Bucket/instance/table name:** n11957557-video-bucket
 - **Video timestamp:**00:09
-- **Relevant files:**
+- **Relevant files:** controller.py, model.py
     -
 
 ### Core - Second data persistence service
 
 - **AWS service name:**  DynamoDB
 - **What data is being stored?:** The metadata for the video files in the first table, and a list of tasks to complete in the tasks files. 
-- **Why is this service suited to this data?:**
-- **Why is are the other services used not suitable for this data?:**
+- **Why is this service suited to this data?:** Small scale, and we can use the PK and SK to retrieve all the data we need really quickly.
+- **Why is are the other services used not suitable for this data?:** they do not provide the functionality we need for the metadata, and while SQL would provide the functionality, it is overkill for this project. 
 - **Bucket/instance/table name:** "n11957557-videos" and "n11957557-tasks"
 - **Video timestamp:**00:49
-- **Relevant files:**
+- **Relevant files:** controller.py, model.py
     -
 
 ### Third data service
@@ -57,9 +57,9 @@ Overview
 
 ### S3 Pre-signed URLs
 
-- **S3 Bucket names:**
+- **S3 Bucket names:** n11957557-video-bucket
 - **Video timestamp:**02:28
-- **Relevant files:**
+- **Relevant files:** models.py
     -
 
 ### In-memory cache
