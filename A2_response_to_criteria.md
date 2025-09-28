@@ -16,9 +16,9 @@ Overview
 - **Name:** Findabhair Doolan
 - **Student number:** n11957557
 - **Partner name (if applicable):** Alex O'Donnell
-- **Application name:** FooBarBaz
+- **Application name:** VideoRestApi
 - **Two line description:** We implemented an app that transcodes videos, and allows uploading and downloading of said videos.
-- **EC2 instance name or ID:**
+- **EC2 instance name or ID:**i-0c72802fa261bbc81
 
 ------------------------------------------------
 
@@ -29,7 +29,7 @@ Overview
 - **Why is this service suited to this data?:** The video files are best suited for this server due to the size limits.
 - **Why is are the other services used not suitable for this data?:** Same reason as above, this allows data storage with size limits that allow what we need
 - **Bucket/instance/table name:** n11957557-video-bucket
-- **Video timestamp:**
+- **Video timestamp:**00:09
 - **Relevant files:**
     -
 
@@ -40,7 +40,7 @@ Overview
 - **Why is this service suited to this data?:**
 - **Why is are the other services used not suitable for this data?:**
 - **Bucket/instance/table name:** "n11957557-videos" and "n11957557-tasks"
-- **Video timestamp:**
+- **Video timestamp:**00:49
 - **Relevant files:**
     -
 
@@ -58,7 +58,7 @@ Overview
 ### S3 Pre-signed URLs
 
 - **S3 Bucket names:**
-- **Video timestamp:**
+- **Video timestamp:**02:28
 - **Relevant files:**
     -
 
@@ -89,11 +89,12 @@ Overview
 
 ### Core - Authentication with Cognito
 
-- **User pool name:**
-- **How are authentication tokens handled by the client?:** [eg. Response to login request sets a cookie containing the token.]
-- **Video timestamp:**
+- **User pool name:**Group101-A2
+- **How are authentication tokens handled by the client?:** Server response to logging in contains the IDToken used for authorising a user
+- **Video timestamp:**04:33
 - **Relevant files:**
-    -
+    -auth.py
+    -configure.py
 
 ### Cognito multi-factor authentication
 
@@ -111,29 +112,35 @@ Overview
 
 ### Cognito groups
 
-- **How are groups used to set permissions?:** [eg. 'admin' users can delete and ban other users]
-- **Video timestamp:**
+- **How are groups used to set permissions?:** Admin group users can view tasks and videos uploaded/started by any user while normal users just view their own
+- **Video timestamp:**05:12
 - **Relevant files:**
-    -
+    -auth.py
+    -transcoder/models.py
+    -transcoder/controllers.py
 
 ### Core - DNS with Route53
 
-- **Subdomain**:  [eg. myawesomeapp.cab432.com]
-- **Video timestamp:**
+- **Subdomain**:group101.cab432.com
+- **Video timestamp:**06:11
 
 ### Parameter store
 
-- **Parameter names:** [eg. n1234567/base_url]
-- **Video timestamp:**
+- **Parameter names:** /Group101/CLIENT_ID, /Group101/DDB_TABLE_FILES, /Group101/DDB_TABLE_TASKS, /Group101/S3_BUCKET, /Group101/USER_POOL_ID
+- **Video timestamp:**06:36
 - **Relevant files:**
-    -
+    -configure.py
+    -auth.py
+    -transcoder/models.py
+    -transcoder/controllers.py
 
 ### Secrets manager
 
-- **Secrets names:** [eg. n1234567-youtube-api-key]
-- **Video timestamp:**
+- **Secrets names:** group101-cognitosecret
+- **Video timestamp:**07:15
 - **Relevant files:**
-    -
+    -configure.py
+    -auth.py
 
 ### Infrastructure as code
 
