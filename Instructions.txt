@@ -18,8 +18,6 @@ git clone https://github.com/FindabhairDoolan/CAB432-Group101.git
 git clone --branch <branch name> https://github.com/FindabhairDoolan/CAB432-Group101.git
 
 cd CAB432-Group101
-nano .env
-#Paste .env in here from extras
 
 #this will build just the main app that needs to be pushed in ecr, app will not work until later pulled from ecr
 docker build -t cab432-group101 .
@@ -46,8 +44,6 @@ aws ecr get-login-password --region ap-southeast-2 | docker login --username AWS
 
 mkdir videorestapi
 cd videorestapi
-nano .env
-#Copy .env contents in from Extra branch in GitHub
 nano docker-compose.yml
 #Copy docker compose in from Extra branch
 
@@ -60,3 +56,10 @@ docker compose up
 #Note that this is for git bash, and path url must be translated from this "C:\Users\fdool\Videos\video.mkv"
 #to this C:/Users/fdool/Videos/video.mkv
 curl -X PUT -T "C:/Users/fdool/Videos/video.mkv" "URL"
+
+#Copy and pastable for my reference
+curl -X PUT -T "C:/Users/fdool/Videos/video.mkv" "URL"
+
+#Route53
+#-------------------------------
+http://group101.cab432.com:3000/docs
