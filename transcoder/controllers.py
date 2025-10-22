@@ -8,6 +8,10 @@ from aws import s3, now_iso, new_file_id
 from configure import S3_BUCKET
 from transcoder import models
 
+import boto3, json
+from configure import SQS_QUEUE_URL, AWS_REGION
+sqs = boto3.client("sqs", region_name=AWS_REGION)
+
 #uploade to s3
 async def upload_video(file: UploadFile = File(...), user=Depends(authenticate_token)):
     username = user['username']
@@ -118,18 +122,27 @@ async def start_transcode(
     task = models.create_task_record(uploaded_by=username, file_id=file_id, preset=preset, created_at=now_iso())
     task_id = task["id"]
 
-    #s3 key is same as input but is under outputs
+    #Output S3 key mirrors input under outputs/
     base_name = os.path.splitext(os.path.basename(file_meta["s3Key"]))[0]
     output_key = f"outputs/{username}/{file_id}/{base_name}_{preset}.mp4"
 
-    t = threading.Thread(
-        target=run_transcode,
-        args=(username, task_id, file_meta["s3Key"], output_key, preset),
-        daemon=True
-    )
-    t.start()
+    #Create the task record
+    task = models.create_task_record(uploaded_by=username, file_id=file_id, preset=preset, created_at=now_iso())
+    task_id = task["id"]
 
-    return {"task_id": task_id, "status": "started"}
+    #queue a job to SQS for the worker service
+    msg = {
+        "taskId": task_id,
+        "fileId": file_id,
+        "preset": preset,
+        "owner": username,
+        "inputKey": file_meta["s3Key"],
+        "outputKey": output_key
+    }
+    sqs.send_message(QueueUrl=SQS_QUEUE_URL, MessageBody=json.dumps(msg))
+
+    # leave task status as 'queued' – worker will flip to 'running'
+    return {"task_id": task_id, "status": "queued"}
 
 #listening and fetching(per user)
 async def list_videos(
@@ -190,4 +203,5 @@ async def download_transcoded(task_id: str, user=Depends(authenticate_token)):
         ExpiresIn=300
     )
     return JSONResponse({"downloadUrl": url})
+
 
