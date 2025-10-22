@@ -22,6 +22,8 @@ def get_parameter(parameter_name: str) -> str:
     except ClientError as e:
         raise RuntimeError(f"Failed to retrieve parameter {parameter_name}: {e}")
 
+SQS_QUEUE_URL = get_parameter("/Group67/SQS_QUEUE_URL")
+
 #Now load config
 AWS_REGION = region_name
 S3_BUCKET = get_parameter("/Group101/S3_BUCKET")
