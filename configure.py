@@ -22,7 +22,8 @@ def get_parameter(parameter_name: str) -> str:
     except ClientError as e:
         raise RuntimeError(f"Failed to retrieve parameter {parameter_name}: {e}")
 
-SQS_QUEUE_URL = get_parameter("/Group67/SQS_QUEUE_URL")
+#hardcoded so it dosent tweak
+SQS_QUEUE_URL = "https://sqs.ap-southeast-2.amazonaws.com/901444280953/group101-transcode-queue"
 
 #Now load config
 AWS_REGION = region_name
